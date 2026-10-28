@@ -1,0 +1,11 @@
+{
+  "appId": "com.horloge.carillon",
+  "appName": "Horloge carillon",
+  "webDir": "www",
+  "server": {
+    "androidScheme": "https"
+  },
+  "android": {
+    "backgroundColor": "#0b1d3a"
+  }
+}
