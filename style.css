@@ -1,5 +1,5 @@
-:root{--bg:#0b1d3a;--card:#13294f;--text:#ffd400;--muted:#b9a95a;--accent:#ffd400;--accent2:#ff6b3d;--line:#2a4577;--btn:#ffd400;--btnt:#0b1d3a}
-:root[data-theme="light"]{--bg:#f4f6fb;--card:#fff;--text:#0b1d3a;--muted:#5c6b8a;--accent:#0b1d3a;--accent2:#d6402a;--line:#cfd6e6;--btn:#0b1d3a;--btnt:#fff}
+:root{color-scheme:dark;--bg:#0b1d3a;--card:#13294f;--text:#ffd400;--muted:#b9a95a;--accent:#ffd400;--accent2:#ff6b3d;--line:#2a4577;--btn:#ffd400;--btnt:#000000}
+:root[data-theme="light"]{color-scheme:light;--bg:#f4f6fb;--card:#fff;--text:#0b1d3a;--muted:#5c6b8a;--accent:#0b1d3a;--accent2:#d6402a;--line:#cfd6e6;--btn:#0b1d3a;--btnt:#fff}
 *{box-sizing:border-box}
 html,body{margin:0;background:var(--bg);color:var(--text);font-family:system-ui,-apple-system,"Segoe UI",Roboto,"Noto Naskh Arabic",sans-serif}
 header{display:flex;align-items:center;justify-content:space-between;padding:12px 16px;border-bottom:1px solid var(--line)}
@@ -13,6 +13,7 @@ label{display:block;margin:8px 0;font-size:.9rem}
 label.row{display:flex;align-items:center;gap:8px}
 input,select,button{font:inherit;color:inherit}
 input[type=text],input[type=number],input[type=date],input[type=time],select{width:100%;margin-top:4px;padding:9px;border-radius:10px;border:1px solid var(--line);background:var(--bg);color:var(--text)}
+option{background:var(--card);color:var(--text)}
 input[type=checkbox]{width:20px;height:20px;accent-color:var(--accent)}
 input[type=range]{width:100%;accent-color:var(--accent)}
 button{background:var(--btn);color:var(--btnt);border:0;border-radius:10px;padding:10px 14px;font-weight:600;cursor:pointer;margin:4px 4px 4px 0}
