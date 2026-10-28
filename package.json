@@ -1,11 +1,12 @@
 {
   "name": "horloge-carillon",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "private": true,
   "description": "Horloge carillon : carillon horaire, réveils, agenda, minuteur, prière",
   "dependencies": {
     "@capacitor/android": "^6.2.0",
-    "@capacitor/core": "^6.2.0"
+    "@capacitor/core": "^6.2.0",
+    "@capacitor/local-notifications": "^6.1.0"
   },
   "devDependencies": {
     "@capacitor/assets": "^3.0.5",
