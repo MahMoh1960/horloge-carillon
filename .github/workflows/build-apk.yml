@@ -26,13 +26,26 @@ jobs:
       - name: Préparer les fichiers web
         run: |
           mkdir -p www
-          cp index.html style.css app.js sw.js manifest.webmanifest icon.svg icon-512.png www/
+          cp index.html style.css app.js native.js sw.js manifest.webmanifest icon.svg icon-512.png www/
 
       - name: Installer Capacitor
         run: npm install
 
       - name: Créer le projet Android
         run: npx cap add android
+
+      - name: Sons des alarmes et autorisations Android
+        run: |
+          mkdir -p android/app/src/main/res/raw
+          python3 make-sounds.py android/app/src/main/res/raw
+          python3 - <<'PY'
+          p = 'android/app/src/main/AndroidManifest.xml'
+          s = open(p, encoding='utf-8').read()
+          perms = ['SCHEDULE_EXACT_ALARM', 'USE_EXACT_ALARM', 'POST_NOTIFICATIONS', 'VIBRATE', 'RECEIVE_BOOT_COMPLETED', 'WAKE_LOCK']
+          add = ''.join('    <uses-permission android:name="android.permission.%s" />\n' % x for x in perms if 'android.permission.%s"' % x not in s)
+          s = s.replace('<application', add + '    <application', 1)
+          open(p, 'w', encoding='utf-8').write(s)
+          PY
 
       - name: Générer les icônes
         continue-on-error: true
