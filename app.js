@@ -20,6 +20,7 @@ const T = {
     fetch: 'Récupérer les horaires', imp: 'Importer mes sons (mp3, wav…)', exp: 'Exporter', expAll: 'Tout exporter (WAV)', mine: 'Mes sons importés',
     builtin: 'Sons intégrés', theme: 'Thème', lang: 'Langue', light: 'Clair', dark: 'Sombre', notif: 'Autoriser les notifications', none: 'Aucun élément.',
     once: 'Une fois', daily: 'Tous les jours', catSounds: 'Son par catégorie', defSound: 'Son par défaut des réveils', snoozeMin: 'Durée du rappel (min)',
+    evAlarm: 'Alarme (sonnerie répétée avec rappel)', catSound: 'Son de la catégorie',
     timerSound: 'Son du minuteur', hintChime: 'Le carillon retentit tant que la page reste ouverte et le son activé.',
     hintPrayer: 'Horaires obtenus en ligne (méthode du Maroc) ; modifiables à la main. L’horloge de l’appareil doit être à l’heure locale.',
     fetched: 'Horaires mis à jour.', fetchErr: 'Échec : connexion indisponible.', timerEnd: 'Minuteur terminé', alarm: 'Réveil', event: 'Agenda', prayerAt: 'Heure de prière',
@@ -39,6 +40,7 @@ const T = {
     fetch: 'جلب المواقيت', imp: 'استيراد أصواتي (mp3، wav…)', exp: 'تصدير', expAll: 'تصدير الكل (WAV)', mine: 'أصواتي المستوردة',
     builtin: 'الأصوات المدمجة', theme: 'المظهر', lang: 'اللغة', light: 'فاتح', dark: 'داكن', notif: 'السماح بالإشعارات', none: 'لا توجد عناصر.',
     once: 'مرة واحدة', daily: 'كل يوم', catSounds: 'صوت لكل فئة', defSound: 'الصوت الافتراضي للمنبهات', snoozeMin: 'مدة الغفوة (د)',
+    evAlarm: 'منبه (رنين متكرر مع غفوة)', catSound: 'صوت الفئة',
     timerSound: 'صوت المؤقت', hintChime: 'يرنّ ما دامت الصفحة مفتوحة والصوت مفعّلاً.',
     hintPrayer: 'المواقيت مأخوذة عبر الإنترنت (طريقة المغرب) ويمكن تعديلها. يجب أن تكون ساعة الجهاز على التوقيت المحلي.',
     fetched: 'تم تحديث المواقيت.', fetchErr: 'فشل: لا يوجد اتصال.', timerEnd: 'انتهى المؤقت', alarm: 'منبه', event: 'الأجندة', prayerAt: 'وقت الصلاة',
@@ -218,7 +220,7 @@ function onMinute(n) {
     if (isNaN(trig)) continue;
     if (now >= trig && now < trig + 6 * 3600000) {
       e.fired = true; dirty = true;
-      startRing({ title: `📅 ${e.title}`, sub: `${e.date} ${e.time} · ${t('c_' + e.cat)}${e.msg ? ' — ' + e.msg : ''}`, sound: state.catSounds[e.cat] || 'b:click' });
+      startRing({ title: `📅 ${e.title}`, sub: `${e.date} ${e.time} · ${t('c_' + e.cat)}${e.msg ? ' — ' + e.msg : ''}`, sound: (e.sound && e.sound !== 'cat') ? e.sound : (state.catSounds[e.cat] || 'b:click'), snooze: !!e.alarm });
     }
   }
   const p = state.prayer;
@@ -335,13 +337,15 @@ const views = {
   },
   agenda() {
     const list = state.events.slice().sort((a, b) => (a.date + a.time).localeCompare(b.date + b.time)).map(e => `<div class="item">
-      <div class="grow"><b>${esc(e.title)}</b><div class="muted">${e.date} ${e.time} · ${t('c_' + e.cat)} · ${e.alert ? '−' + e.alert + ' ' + t('min') : t('atTime')}${e.fired ? ' ✓' : ''}</div>${e.msg ? `<div class="muted">${esc(e.msg)}</div>` : ''}</div>
+      <div class="grow"><b>${esc(e.title)}</b><div class="muted">${e.date} ${e.time} · ${t('c_' + e.cat)} · ${e.alert ? '−' + e.alert + ' ' + t('min') : t('atTime')}${e.alarm ? ' ⏰' : ''}${e.fired ? ' ✓' : ''}</div>${e.msg ? `<div class="muted">${esc(e.msg)}</div>` : ''}</div>
       <button class="ghost" data-act="delEvent" data-id="${e.id}">✕</button></div>`).join('') || `<p class="muted">${t('none')}</p>`;
     return `<section class="card"><h2>${t('agenda')}</h2>${list}</section>
     <section class="card"><label>${t('titleF')}<input type="text" id="ev_title"></label>
     <div class="two"><label>${t('date')}<input type="date" id="ev_date" value="${todayStr()}"></label><label>${t('time')}<input type="time" id="ev_time" value="09:00"></label></div>
     <div class="two"><label>${t('cat')}<select id="ev_cat">${CATS.map(c => opt(c, t('c_' + c), 'cours')).join('')}</select></label>
     <label>${t('alert')}<select id="ev_alert">${opt(0, t('atTime'), 0)}${opt(10, t('b10'), 0)}${opt(60, t('b60'), 0)}</select></label></div>
+    <label class="row"><input type="checkbox" id="ev_alarm" checked> ${t('evAlarm')}</label>
+    <label>${t('sound')}<select id="ev_sound">${opt('cat', t('catSound'), 'cat')}${soundOpts('cat')}</select></label>
     <label>${t('msg')}<input type="text" id="ev_msg"></label>
     <button data-act="addEvent">${t('add')}</button></section>`;
   },
@@ -409,7 +413,7 @@ const ACT = {
   addEvent: () => {
     const title = $('#ev_title').value.trim(), date = $('#ev_date').value, time = $('#ev_time').value;
     if (!title || !date || !time) return;
-    state.events.push({ id: uid(), title, date, time, cat: $('#ev_cat').value, alert: Number($('#ev_alert').value), msg: $('#ev_msg').value.trim(), fired: false });
+    state.events.push({ id: uid(), title, date, time, cat: $('#ev_cat').value, alert: Number($('#ev_alert').value), msg: $('#ev_msg').value.trim(), alarm: $('#ev_alarm').checked, sound: $('#ev_sound').value, fired: false });
     save(); render();
   },
   delEvent: id => { state.events = state.events.filter(e => e.id !== id); save(); render(); },
