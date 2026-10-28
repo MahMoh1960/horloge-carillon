@@ -1,0 +1,57 @@
+name: Compiler l'APK
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Récupérer le dépôt
+        uses: actions/checkout@v4
+
+      - name: Installer Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Installer Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+
+      - name: Préparer les fichiers web
+        run: |
+          mkdir -p www
+          cp index.html style.css app.js sw.js manifest.webmanifest icon.svg icon-512.png www/
+
+      - name: Installer Capacitor
+        run: npm install
+
+      - name: Créer le projet Android
+        run: npx cap add android
+
+      - name: Générer les icônes
+        continue-on-error: true
+        run: |
+          mkdir -p assets
+          cp icon-1024.png assets/icon.png
+          npx @capacitor/assets generate --android --iconBackgroundColor '#0b1d3a' --iconBackgroundColorDark '#0b1d3a'
+
+      - name: Synchroniser
+        run: npx cap sync android
+
+      - name: Compiler l'APK
+        working-directory: android
+        run: |
+          chmod +x gradlew
+          ./gradlew assembleDebug
+
+      - name: Publier l'APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: horloge-carillon-apk
+          path: android/app/build/outputs/apk/debug/app-debug.apk
