@@ -21,6 +21,7 @@ const T = {
     builtin: 'Sons intégrés', theme: 'Thème', lang: 'Langue', light: 'Clair', dark: 'Sombre', notif: 'Autoriser les notifications', none: 'Aucun élément.',
     once: 'Une fois', daily: 'Tous les jours', catSounds: 'Son par catégorie', defSound: 'Son par défaut des réveils', snoozeMin: 'Durée du rappel (min)',
     evAlarm: 'Alarme (sonnerie répétée avec rappel)', catSound: 'Son de la catégorie',
+    prayBefore: 'Alarme avant chaque prière (minutes ; 0 = aucune)', prayBeforeSound: 'Son de l’alarme avant la prière', inMin: 'Dans',
     timerSound: 'Son du minuteur', hintChime: 'Le carillon retentit tant que la page reste ouverte et le son activé.',
     hintPrayer: 'Horaires obtenus en ligne (méthode du Maroc) ; modifiables à la main. L’horloge de l’appareil doit être à l’heure locale.',
     fetched: 'Horaires mis à jour.', fetchErr: 'Échec : connexion indisponible.', timerEnd: 'Minuteur terminé', alarm: 'Réveil', event: 'Agenda', prayerAt: 'Heure de prière',
@@ -41,6 +42,7 @@ const T = {
     builtin: 'الأصوات المدمجة', theme: 'المظهر', lang: 'اللغة', light: 'فاتح', dark: 'داكن', notif: 'السماح بالإشعارات', none: 'لا توجد عناصر.',
     once: 'مرة واحدة', daily: 'كل يوم', catSounds: 'صوت لكل فئة', defSound: 'الصوت الافتراضي للمنبهات', snoozeMin: 'مدة الغفوة (د)',
     evAlarm: 'منبه (رنين متكرر مع غفوة)', catSound: 'صوت الفئة',
+    prayBefore: 'منبه قبل كل صلاة (بالدقائق ؛ 0 = بدون)', prayBeforeSound: 'صوت المنبه قبل الصلاة', inMin: 'بعد',
     timerSound: 'صوت المؤقت', hintChime: 'يرنّ ما دامت الصفحة مفتوحة والصوت مفعّلاً.',
     hintPrayer: 'المواقيت مأخوذة عبر الإنترنت (طريقة المغرب) ويمكن تعديلها. يجب أن تكون ساعة الجهاز على التوقيت المحلي.',
     fetched: 'تم تحديث المواقيت.', fetchErr: 'فشل: لا يوجد اتصال.', timerEnd: 'انتهى المؤقت', alarm: 'منبه', event: 'الأجندة', prayerAt: 'وقت الصلاة',
@@ -61,7 +63,7 @@ const DEF = {
   chime: { on: true, sound: 'b:click', mode: 'single', every: 'hour', from: 7, to: 22, vol: 0.7 },
   alarms: [], events: [],
   catSounds: { cours: 'b:beep', reunion: 'b:drop', soutenance: 'b:gong', rappel: 'b:tick', autre: 'b:click' },
-  prayer: { on: false, city: 'Mohammedia', country: 'Morocco', sound: 'b:bell', date: '', times: { Fajr: '', Dhuhr: '', Asr: '', Maghrib: '', Isha: '' } }
+  prayer: { on: false, city: 'Mohammedia', country: 'Morocco', sound: 'b:bell', before: 10, beforeSound: 'b:beep', date: '', times: { Fajr: '', Dhuhr: '', Asr: '', Maghrib: '', Isha: '' } }
 };
 const KEY = 'horloge.v1';
 let state = (() => {
@@ -225,7 +227,15 @@ function onMinute(n) {
   }
   const p = state.prayer;
   if (p.on) {
-    for (const k of PR) if (p.times[k] === hm) startRing({ title: `🕌 ${t('p_' + k)}`, sub: `${t('prayerAt')} ${hm}`, sound: p.sound });
+    for (const k of PR) {
+      const tm = p.times[k]; if (!tm) continue;
+      if (tm === hm) startRing({ title: `🕌 ${t('p_' + k)}`, sub: `${t('prayerAt')} ${hm}`, sound: p.sound });
+      else if (p.before > 0) {
+        const [ph, pm] = tm.split(':').map(Number);
+        const bm = (((ph * 60 + pm - p.before) % 1440) + 1440) % 1440;
+        if (bm === h * 60 + m) startRing({ title: `🕌 ${t('inMin')} ${p.before} ${t('min')} · ${t('p_' + k)}`, sub: `${t('prayerAt')} ${tm}`, sound: p.beforeSound });
+      }
+    }
     if (p.date !== todayStr(n)) fetchPrayer(true);
   }
   if (dirty) { save(); if (['alarms', 'agenda'].includes(state.tab)) render(); }
@@ -361,6 +371,8 @@ const views = {
     <div class="two"><label>${t('city')}<input type="text" data-k="prayer.city" value="${esc(p.city)}"></label><label>${t('country')}<input type="text" data-k="prayer.country" value="${esc(p.country)}"></label></div>
     ${PR.map(k => `<label>${t('p_' + k)}<input type="time" data-k="prayer.times.${k}" value="${p.times[k]}"></label>`).join('')}
     <label>${t('sound')}<select data-k="prayer.sound">${soundOpts(p.sound)}</select></label>
+    <label>${t('prayBefore')}<input type="number" min="0" max="180" data-k="prayer.before" value="${p.before}"></label>
+    <label>${t('prayBeforeSound')}<select data-k="prayer.beforeSound">${soundOpts(p.beforeSound)}</select></label>
     <button data-act="fetchPrayer">${t('fetch')}</button><p class="muted">${t('hintPrayer')}</p></section>`;
   },
   sounds() {
