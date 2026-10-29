@@ -1,4 +1,4 @@
-const C = 'horloge-v5';
+const C = 'horloge-v7';
 const F = ['./', 'index.html', 'style.css', 'app.js', 'native.js', 'manifest.webmanifest', 'icon.svg', 'icon-512.png'];
 self.addEventListener('install', e => e.waitUntil(caches.open(C).then(c => c.addAll(F)).then(() => self.skipWaiting())));
 self.addEventListener('activate', e => e.waitUntil(caches.keys().then(k => Promise.all(k.filter(x => x !== C).map(x => caches.delete(x)))).then(() => self.clients.claim())));

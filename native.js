@@ -6,7 +6,8 @@
   const N = window.Native = {
     available: false, perm: 'unknown', exact: 'unknown',
     active() { return this.available && this.perm === 'granted'; },
-    init() { }, changed() { }, guard() { }, sync() { }, test() { }, requestPerm() { }, requestExact() { }
+    init() { }, changed() { }, guard() { }, sync() { }, test() { }, requestPerm() { }, requestExact() { },
+    async shareFile() { return false; }, minimize() { }, handledKey: null
   };
   const Cap = window.Capacitor;
   if (!(Cap && typeof Cap.isNativePlatform === 'function' && Cap.isNativePlatform())) return;
@@ -68,7 +69,7 @@
       for (let ts = base.getTime(); ts < now + horizon; ts += step * 60000) {
         const dt = new Date(ts), h = dt.getHours(), m = dt.getMinutes();
         if (m % step !== 0 || !inRange(h, c.from, c.to)) continue;
-        push(ts, 'chime', { title: `🔔 ${pad(h)}:${pad(m)}`, body: t('chime'), sound: c.sound, kind: 'chime' });
+        push(ts, 'chime', { title: `🔔 ${pad(h)}:${pad(m)}`, body: t('chime'), sound: c.sound, kind: 'chime', fullScreen: !!c.wake && m === 0 });
       }
     }
 
@@ -139,6 +140,7 @@
       schedule: { at: new Date(x.at), allowWhileIdle: true }, autoCancel: true
     };
     if (x.group) n.extra = { group: x.group };
+    if (x.fullScreen) n.extra = Object.assign(n.extra || {}, { fullScreen: true });   // écran allumé + horloge (voir patch-android.py)
     if (sk !== 'default') n.sound = 'snd_' + sk + '.wav';
     return n;
   }
@@ -225,6 +227,24 @@
     } catch (e) { alert(String(e)); }
   };
 
+  // Partage d'un fichier (sauvegarde) : écrit dans le cache de l'application puis ouvre la feuille de partage
+  // d'Android (Drive, Fichiers, e-mail, WhatsApp...). Renvoie faux si les plugins sont absents.
+  N.shareFile = async (blob, name, title) => {
+    const FS = Cap.Plugins && Cap.Plugins.Filesystem, SH = Cap.Plugins && Cap.Plugins.Share;
+    if (!FS || !SH) return false;
+    try {
+      const data = await new Promise((res, rej) => {
+        const r = new FileReader();
+        r.onload = () => res(String(r.result).split(',')[1] || '');
+        r.onerror = () => rej(r.error);
+        r.readAsDataURL(blob);
+      });
+      const w = await FS.writeFile({ path: name, data, directory: 'CACHE' });
+      await SH.share({ title, dialogTitle: title, url: w.uri });
+      return true;
+    } catch (e) { return /cancel/i.test(msg(e)); }
+  };
+
   N.check = async () => {
     await refresh();
     const L = [];
@@ -240,13 +260,31 @@
     if (typeof render === 'function' && state.tab === 'settings') render();
   };
 
+  /* ---------- Horloge affichée à l'heure pile, écran verrouillé ---------- */
+  let lastWake = 0;
+  N.minimize = () => { try { const A = Cap.Plugins && Cap.Plugins.App; if (A && A.minimizeApp) A.minimizeApp(); } catch (e) { } };
+  // Affiche l'horloge si l'application vient d'être lancée par la notification plein écran de l'heure pile
+  function wakeOnce() {
+    const c = state.chime;
+    if (!c.on || !c.wake || typeof showWake !== 'function') return;
+    const now = Date.now(), d = new Date(now); d.setMinutes(0, 0, 0);
+    const h0 = d.getTime();
+    if (lastWake === h0 || now - h0 > 25000 || !inRange(d.getHours(), c.from, c.to)) return;
+    lastWake = h0;
+    showWake();
+  }
+  N._wakeOnce = wakeOnce;
+
   N.init = async () => {
+    wakeOnce();                      // lancement à froid par la notification plein écran de l'heure pile
     await refresh();
     await createChannels();
     try { await LN.removeAllDeliveredNotifications(); } catch (e) { }
     try {
       LN.addListener('localNotificationActionPerformed', async ev => {
-        const g = ev && ev.notification && ev.notification.extra && ev.notification.extra.group;
+        const ex = ev && ev.notification && ev.notification.extra;
+        if (ex && ex.fullScreen) wakeOnce();
+        const g = ex && ex.group;
         if (!g) return;
         try {
           const pend = await LN.getPending();
@@ -257,6 +295,7 @@
     } catch (e) { }
     document.addEventListener('visibilitychange', async () => {
       if (document.hidden) { scheduleNear(); return; }
+      if (N.active()) N.handledKey = keyOf(new Date());   // la minute en cours a déjà été sonnée par Android
       await refresh();
       try { await LN.removeAllDeliveredNotifications(); } catch (e) { }
       sync();

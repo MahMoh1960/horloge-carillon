@@ -23,6 +23,11 @@ const T = {
     evAlarm: 'Alarme (sonnerie répétée avec rappel)', catSound: 'Son de la catégorie',
     nat: 'Alarmes Android (écran éteint)', natHint: 'Le carillon, les réveils, l’agenda, le minuteur et la prière sont programmés dans Android : ils sonnent même application fermée ou écran éteint. Le son suit le volume des notifications.',
     natPerm: 'Notifications', natExact: 'Alarmes exactes', natYes: 'autorisé', natNo: 'non autorisé', natAllow: 'Autoriser', natTest: 'Tester dans 1 minute',
+    wake: 'Allumer l’écran et afficher l’horloge à chaque heure pile (même téléphone verrouillé)', wakeSec: 'Durée d’affichage (secondes)', wakeTest: 'Tester l’affichage',
+    wakeHint: 'À l’heure pile, l’écran s’allume et l’horloge s’affiche en grand pendant la durée choisie, puis l’application se réduit ; l’écran s’éteint ensuite selon le délai normal de votre téléphone. Sur Android 14 et plus, si rien ne s’affiche : Paramètres → Applications → Horloge carillon → « Notifications plein écran » → autoriser. Touchez l’horloge pour la fermer.',
+    backup: 'Sauvegarde et restauration', backupHint: 'Le fichier de sauvegarde contient tous vos réglages, réveils, événements et sons importés. Conservez-le sur Drive ou envoyez-le-vous : il permet de tout retrouver après une réinstallation ou sur un autre téléphone.',
+    backupBtn: 'Sauvegarder', restoreBtn: 'Restaurer', lastBackup: 'Dernière sauvegarde', never: 'jamais', backupErr: 'Échec de la sauvegarde.',
+    restoreConfirm: 'Remplacer toutes les données actuelles (réglages, réveils, agenda, sons importés) par celles de la sauvegarde ?', restoreDone: 'Données restaurées.', restoreBad: 'Fichier de sauvegarde invalide ou illisible. Aucune donnée n’a été modifiée.',
     natCheck: 'Vérifier la programmation', natPending: 'Alarmes programmées dans Android', natLast: 'Dernière synchronisation',
     natTestTitle: 'Alarme de test', natTestMsg: 'Alarme de test programmée : fermez l’écran et patientez 1 minute.', natDefault: 'Son du système',
     natBatt: 'Si une alarme tarde ou manque : Paramètres Android → Applications → Horloge carillon → Batterie → « Sans restriction ».',
@@ -50,6 +55,11 @@ const T = {
     evAlarm: 'منبه (رنين متكرر مع غفوة)', catSound: 'صوت الفئة',
     nat: 'منبهات أندرويد (والشاشة مطفأة)', natHint: 'يتم برمجة الرنين والمنبهات والأجندة والمؤقت والصلاة داخل أندرويد، فتعمل حتى والتطبيق مغلق أو الشاشة مطفأة. الصوت يتبع مستوى صوت الإشعارات.',
     natPerm: 'الإشعارات', natExact: 'المنبهات الدقيقة', natYes: 'مسموح', natNo: 'غير مسموح', natAllow: 'السماح', natTest: 'تجربة بعد دقيقة',
+    wake: 'إضاءة الشاشة وعرض الساعة عند كل ساعة تامة (حتى والهاتف مقفل)', wakeSec: 'مدة العرض (بالثواني)', wakeTest: 'تجربة العرض',
+    wakeHint: 'عند الساعة التامة تضيء الشاشة وتظهر الساعة بحجم كبير طوال المدة المحددة، ثم يُصغَّر التطبيق؛ وتنطفئ الشاشة بعدها وفق مهلة هاتفك المعتادة. في أندرويد 14 فما فوق، إن لم يظهر شيء: الإعدادات ← التطبيقات ← ساعة الرنين ← «الإشعارات بملء الشاشة» ← السماح. المس الساعة لإغلاقها.',
+    backup: 'النسخ الاحتياطي والاستعادة', backupHint: 'يحتوي ملف النسخة الاحتياطية على كل إعداداتك ومنبهاتك وأحداثك وأصواتك المستوردة. احتفظ به في Drive أو أرسله إلى نفسك: يتيح لك استرجاع كل شيء بعد إعادة التثبيت أو على هاتف آخر.',
+    backupBtn: 'حفظ نسخة', restoreBtn: 'استعادة', lastBackup: 'آخر نسخة', never: 'أبدا', backupErr: 'فشل النسخ الاحتياطي.',
+    restoreConfirm: 'استبدال كل البيانات الحالية (الإعدادات والمنبهات والأجندة والأصوات المستوردة) ببيانات النسخة الاحتياطية؟', restoreDone: 'تمت استعادة البيانات.', restoreBad: 'ملف النسخة الاحتياطية غير صالح أو غير مقروء. لم يتم تغيير أي بيانات.',
     natCheck: 'التحقق من البرمجة', natPending: 'المنبهات المبرمجة في أندرويد', natLast: 'آخر مزامنة',
     natTestTitle: 'منبه تجريبي', natTestMsg: 'تمت برمجة منبه تجريبي: أطفئ الشاشة وانتظر دقيقة.', natDefault: 'صوت النظام',
     natBatt: 'إذا تأخر المنبه أو لم يرنّ: إعدادات أندرويد ← التطبيقات ← ساعة الرنين ← البطارية ← «دون قيود».',
@@ -72,7 +82,7 @@ const CATS = ['cours', 'reunion', 'soutenance', 'rappel', 'autre'];
 const PR = ['Fajr', 'Dhuhr', 'Asr', 'Maghrib', 'Isha'];
 const DEF = {
   lang: 'fr', theme: 'dark', view: 'analog', snooze: 5, vib: true, defSound: 'b:bell', timerSound: 'b:bell',
-  chime: { on: true, sound: 'b:click', mode: 'single', every: 'hour', from: 7, to: 22, vol: 0.7 },
+  chime: { on: true, sound: 'b:click', mode: 'single', every: 'hour', from: 7, to: 22, vol: 0.7, wake: false, wakeSec: 5 },
   alarms: [], events: [],
   catSounds: { cours: 'b:beep', reunion: 'b:drop', soutenance: 'b:gong', rappel: 'b:tick', autre: 'b:click' },
   prayer: { on: false, city: 'Mohammedia', country: 'Morocco', sound: 'b:bell', before: 10, beforeSound: 'b:beep', date: '', times: { Fajr: '', Dhuhr: '', Asr: '', Maghrib: '', Isha: '' } }
@@ -107,6 +117,108 @@ async function importFiles(files) {
     try { await dbPut(o); customs.push(o); } catch (e) { }
   }
   render();
+}
+
+/* ---------- Sauvegarde et restauration ---------- */
+const BK_APP = 'horloge-carillon';
+const dbClear = async () => { const db = await DB(); return new Promise((res, rej) => { const tx = db.transaction('sounds', 'readwrite'); tx.objectStore('sounds').clear(); tx.oncomplete = res; tx.onerror = () => rej(tx.error); }); };
+const blobToB64 = b => new Promise((res, rej) => { const r = new FileReader(); r.onload = () => res(String(r.result).split(',')[1] || ''); r.onerror = () => rej(r.error); r.readAsDataURL(b); });
+const idc = v => String(v ?? '').replace(/[^\w-]/g, '').slice(0, 40);
+const isHM = v => /^\d\d:\d\d$/.test(String(v));
+const isDay = v => /^\d{4}-\d\d-\d\d$/.test(String(v));
+const num = (v, min, max, d) => { const n = Number(v); return (v !== '' && v != null && Number.isFinite(n)) ? Math.min(max, Math.max(min, n)) : d; };
+
+// Reconstruit un état propre à partir d'un fichier de sauvegarde (jamais de contenu non vérifié dans l'interface)
+function cleanState(raw) {
+  const r = raw && typeof raw === 'object' ? raw : {};
+  const o = JSON.parse(JSON.stringify(DEF));
+  const ref = (v, d) => /^[bc]:[\w-]+$/.test(String(v ?? '')) ? String(v) : d;
+  if (r.lang === 'fr' || r.lang === 'ar') o.lang = r.lang;
+  if (r.theme === 'dark' || r.theme === 'light') o.theme = r.theme;
+  if (r.view === 'analog' || r.view === 'digital') o.view = r.view;
+  o.snooze = num(r.snooze, 1, 60, DEF.snooze);
+  o.vib = r.vib !== false;
+  o.defSound = ref(r.defSound, DEF.defSound);
+  o.timerSound = ref(r.timerSound, DEF.timerSound);
+  const c = r.chime || {};
+  o.chime = {
+    on: c.on !== false, sound: ref(c.sound, DEF.chime.sound), mode: c.mode === 'count' ? 'count' : 'single',
+    every: ['hour', 'half', 'quarter'].includes(c.every) ? c.every : 'hour',
+    from: Math.round(num(c.from, 0, 23, 7)), to: Math.round(num(c.to, 0, 23, 22)), vol: num(c.vol, 0, 1, 0.7),
+    wake: !!c.wake, wakeSec: Math.round(num(c.wakeSec, 2, 30, 5))
+  };
+  o.alarms = (Array.isArray(r.alarms) ? r.alarms : []).filter(a => a && isHM(a.time)).map(a => ({
+    id: idc(a.id) || uid(), label: String(a.label || '').slice(0, 80), time: a.time,
+    days: (Array.isArray(a.days) ? a.days : []).map(Number).filter(d => Number.isInteger(d) && d >= 0 && d <= 6),
+    repeat: !!a.repeat, sound: ref(a.sound, o.defSound), on: !!a.on
+  }));
+  o.events = (Array.isArray(r.events) ? r.events : []).filter(e => e && e.title && isDay(e.date) && isHM(e.time)).map(e => ({
+    id: idc(e.id) || uid(), title: String(e.title).slice(0, 120), date: e.date, time: e.time,
+    cat: CATS.includes(e.cat) ? e.cat : 'autre', alert: [0, 10, 60].includes(Number(e.alert)) ? Number(e.alert) : 0,
+    msg: String(e.msg || '').slice(0, 200), alarm: !!e.alarm, sound: e.sound === 'cat' ? 'cat' : ref(e.sound, 'cat'), fired: !!e.fired
+  }));
+  const cs = r.catSounds || {};
+  CATS.forEach(k => { o.catSounds[k] = ref(cs[k], DEF.catSounds[k]); });
+  const p = r.prayer || {};
+  o.prayer = {
+    on: !!p.on, city: String(p.city || DEF.prayer.city).slice(0, 60), country: String(p.country || DEF.prayer.country).slice(0, 60),
+    sound: ref(p.sound, DEF.prayer.sound), before: Math.round(num(p.before, 0, 180, 10)), beforeSound: ref(p.beforeSound, DEF.prayer.beforeSound),
+    date: isDay(p.date) ? p.date : '', times: {}
+  };
+  PR.forEach(k => { o.prayer.times[k] = isHM((p.times || {})[k]) ? p.times[k] : ''; });
+  if (p.cal && typeof p.cal === 'object') {
+    const cal = {};
+    for (const [d, tm] of Object.entries(p.cal)) {
+      if (isDay(d) && tm && PR.every(k => isHM(tm[k]))) cal[d] = Object.fromEntries(PR.map(k => [k, tm[k]]));
+    }
+    if (Object.keys(cal).length) o.prayer.cal = cal;
+  }
+  return o;
+}
+
+async function makeBackup() {
+  const st = { ...state }; delete st.tab; delete st.lastBackup;
+  const sounds = [];
+  try {
+    for (const c of await dbAll()) sounds.push({ id: idc(c.id), name: String(c.name || '').slice(0, 80), type: c.blob.type || 'audio/mpeg', data: await blobToB64(c.blob) });
+  } catch (e) { }
+  return new Blob([JSON.stringify({ app: BK_APP, version: 1, date: new Date().toISOString(), state: st, sounds })], { type: 'application/json' });
+}
+async function shareOrDownload(blob, name) {
+  if (window.Native && Native.available && await Native.shareFile(blob, name, t('backup'))) return;
+  try {
+    const f = new File([blob], name, { type: blob.type });
+    if (navigator.canShare && navigator.canShare({ files: [f] })) { await navigator.share({ files: [f], title: t('backup') }); return; }
+  } catch (e) { if (e && e.name === 'AbortError') return; }
+  download(blob, name);
+}
+async function saveBackup() {
+  try {
+    await shareOrDownload(await makeBackup(), `horloge-sauvegarde-${todayStr()}.json`);
+    state.lastBackup = new Date().toISOString(); save();
+    if (state.tab === 'settings') render();
+  } catch (e) { alert(t('backupErr') + ' ' + (e && e.message || '')); }
+}
+async function restoreBackup(file) {
+  try {
+    const j = JSON.parse(await file.text());
+    if (!j || j.app !== BK_APP || !j.state || typeof j.state !== 'object') throw new Error('format');
+    const clean = cleanState(j.state);
+    const sounds = [];
+    for (const s of (Array.isArray(j.sounds) ? j.sounds : [])) {
+      const id = idc(s && s.id), data = String(s && s.data || '');
+      if (!id || !/^[A-Za-z0-9+/=]+$/.test(data)) continue;
+      const type = /^audio\/[\w.+-]+$/.test(String(s.type)) ? s.type : 'audio/mpeg';
+      sounds.push({ id, name: String(s.name || '').slice(0, 80), blob: new Blob([Uint8Array.from(atob(data), ch => ch.charCodeAt(0))], { type }) });
+    }
+    if (!confirm(t('restoreConfirm'))) return;
+    await dbClear();
+    for (const s of sounds) await dbPut(s);
+    clean.lastBackup = state.lastBackup;
+    localStorage.setItem(KEY, JSON.stringify(clean));
+    alert(t('restoreDone'));
+    location.reload();
+  } catch (e) { alert(t('restoreBad')); }
 }
 
 /* ---------- Moteur audio ---------- */
@@ -264,10 +376,42 @@ function tick() {
   const n = new Date();
   updateClock(n); updateTimer();
   const k = keyOf(n);
-  if (k !== lastKey) { lastKey = k; onMinute(n); if (window.Native) Native.guard(); }
+  if (k !== lastKey) {
+    lastKey = k;
+    if (!(window.Native && Native.handledKey === k)) onMinute(n);   // minute déjà traitée par Android pendant l'absence
+    if (window.Native) Native.guard();
+  }
   const due = snoozes.filter(s => s.ts <= Date.now());
   if (due.length) { snoozes = snoozes.filter(s => s.ts > Date.now()); startRing(due[0].o); }
   const u = $('#unlock'); if (u) u.hidden = !!(AC && AC.state === 'running');
+}
+
+/* ---------- Horloge affichée à l'heure pile (écran verrouillé) ---------- */
+let wakeTimer = null, wakeTick = null;
+function hideWake(minimize) {
+  clearTimeout(wakeTimer); clearInterval(wakeTick);
+  const el = $('#wake'); if (el) el.remove();
+  if (minimize && window.Native && Native.available) Native.minimize();
+}
+function showWake() {
+  const sec = Math.round(num(state.chime.wakeSec, 2, 30, 5));
+  let el = $('#wake');
+  if (!el) {
+    el = document.createElement('div'); el.id = 'wake';
+    el.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;z-index:30;background:#0b1d3a;color:#ffd400;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;font-weight:700';
+    el.addEventListener('click', () => hideWake(false));
+    document.body.appendChild(el);
+  }
+  const paint = () => {
+    const n = new Date();
+    let dl = todayStr(n);
+    try { dl = new Intl.DateTimeFormat(state.lang === 'ar' ? 'ar-MA-u-nu-latn' : 'fr-FR', { weekday: 'long', day: 'numeric', month: 'long' }).format(n); } catch (e) { }
+    el.innerHTML = `<div style="font-size:24vw;line-height:1;font-variant-numeric:tabular-nums">${pad(n.getHours())}:${pad(n.getMinutes())}</div><div style="font-size:6vw;font-weight:500;margin-top:16px">${esc(dl)}</div>`;
+  };
+  paint();
+  clearInterval(wakeTick); clearTimeout(wakeTimer);
+  wakeTick = setInterval(paint, 1000);
+  wakeTimer = setTimeout(() => hideWake(true), sec * 1000);
 }
 
 /* ---------- Horloge ---------- */
@@ -368,7 +512,10 @@ const views = {
     <div class="two"><label>${t('from')}<input type="number" min="0" max="23" data-k="chime.from" value="${c.from}"></label>
     <label>${t('to')}<input type="number" min="0" max="23" data-k="chime.to" value="${c.to}"></label></div>
     <label>${t('volume')}<input type="range" min="0" max="1" step="0.05" data-k="chime.vol" value="${c.vol}"></label>
-    <button data-act="testChime">${t('test')}</button><p class="muted">${t('hintChime')}</p></section>`;
+    ${(window.Native && Native.available) ? `<label class="row"><input type="checkbox" data-k="chime.wake" ${c.wake ? 'checked' : ''}> ${t('wake')}</label>
+    <label>${t('wakeSec')}<input type="number" min="2" max="30" data-k="chime.wakeSec" value="${c.wakeSec}"></label>
+    <p class="muted">${t('wakeHint')}</p>` : ''}
+    <button data-act="testChime">${t('test')}</button>${(window.Native && Native.available) ? `<button class="ghost" data-act="testWake">${t('wakeTest')}</button>` : ''}<p class="muted">${t('hintChime')}</p></section>`;
   },
   alarms() {
     const list = state.alarms.slice().sort((a, b) => a.time.localeCompare(b.time)).map(a => `<div class="item">
@@ -428,7 +575,14 @@ const views = {
     <button data-act="natTest">${t('natTest')}</button><button class="ghost" data-act="natCheck">${t('natCheck')}</button>
     ${Native.diagText ? `<div class="muted" style="white-space:pre-wrap;margin:8px 0">${esc(Native.diagText)}</div>` : ''}
     <p class="muted">${t('natBatt')}</p><p class="muted">${t('natLimit')}</p></section>` : '';
-    return `${nat}<section class="card"><h2>${t('settings')}</h2>
+    let last = t('never');
+    try { if (state.lastBackup) last = new Date(state.lastBackup).toLocaleString(state.lang === 'ar' ? 'ar-MA-u-nu-latn' : 'fr-FR'); } catch (e) { }
+    const bk = `<section class="card"><h2>${t('backup')}</h2>
+    <p class="muted">${t('backupHint')}</p>
+    <button data-act="backup">${t('backupBtn')}</button><button class="ghost" data-act="restore">${t('restoreBtn')}</button>
+    <input type="file" id="restoreFile" style="display:none">
+    <p class="muted">${t('lastBackup')} : ${esc(last)}</p></section>`;
+    return `${bk}${nat}<section class="card"><h2>${t('settings')}</h2>
     <label>${t('lang')}<select data-k="lang" data-re="1">${opt('fr', 'Français', state.lang)}${opt('ar', 'العربية', state.lang)}</select></label>
     <label>${t('theme')}<select data-k="theme" data-re="1">${opt('dark', t('dark'), state.theme)}${opt('light', t('light'), state.theme)}</select></label>
     <label>${t('snoozeMin')}<input type="number" min="1" max="60" data-k="snooze" value="${state.snooze}"></label>
@@ -490,6 +644,9 @@ const ACT = {
   natCheck: () => Native.check(),
   fetchPrayer: () => fetchPrayer(false),
   notifPerm: () => { if ('Notification' in window) Notification.requestPermission(); },
+  testWake: () => showWake(),
+  backup: () => saveBackup(),
+  restore: () => $('#restoreFile').click(),
   stopRing: () => stopRing(),
   snoozeRing: () => { if (ring) { snoozes.push({ ts: Date.now() + state.snooze * 60000, o: ring.o }); stopRing(); } }
 };
@@ -506,6 +663,7 @@ document.addEventListener('change', e => {
     return;
   }
   if (el.dataset.tog) { const a = state.alarms.find(x => x.id === el.dataset.tog); if (a) { a.on = el.checked; a.armed = 0; save(); } return; }
+  if (el.id === 'restoreFile' && el.files.length) { const f = el.files[0]; el.value = ''; restoreBackup(f); return; }
   if (el.id === 'imp' && el.files.length) importFiles([...el.files]);
 });
 document.addEventListener('pointerdown', () => ctx(), { once: true });
