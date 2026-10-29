@@ -34,18 +34,11 @@ jobs:
       - name: Créer le projet Android
         run: npx cap add android
 
-      - name: Sons des alarmes et autorisations Android
+      - name: Sons des alarmes, autorisations et écran verrouillé
         run: |
           mkdir -p android/app/src/main/res/raw
           python3 make-sounds.py android/app/src/main/res/raw
-          python3 - <<'PY'
-          p = 'android/app/src/main/AndroidManifest.xml'
-          s = open(p, encoding='utf-8').read()
-          perms = ['SCHEDULE_EXACT_ALARM', 'USE_EXACT_ALARM', 'POST_NOTIFICATIONS', 'VIBRATE', 'RECEIVE_BOOT_COMPLETED', 'WAKE_LOCK']
-          add = ''.join('    <uses-permission android:name="android.permission.%s" />\n' % x for x in perms if 'android.permission.%s"' % x not in s)
-          s = s.replace('<application', add + '    <application', 1)
-          open(p, 'w', encoding='utf-8').write(s)
-          PY
+          python3 patch-android.py .
 
       - name: Générer les icônes
         continue-on-error: true
