@@ -21,6 +21,12 @@ const T = {
     builtin: 'Sons intégrés', theme: 'Thème', lang: 'Langue', light: 'Clair', dark: 'Sombre', notif: 'Autoriser les notifications', none: 'Aucun élément.',
     once: 'Une fois', daily: 'Tous les jours', catSounds: 'Son par catégorie', defSound: 'Son par défaut des réveils', snoozeMin: 'Durée du rappel (min)',
     evAlarm: 'Alarme (sonnerie répétée avec rappel)', catSound: 'Son de la catégorie',
+    nat: 'Alarmes Android (écran éteint)', natHint: 'Le carillon, les réveils, l’agenda, le minuteur et la prière sont programmés dans Android : ils sonnent même application fermée ou écran éteint. Le son suit le volume des notifications.',
+    natPerm: 'Notifications', natExact: 'Alarmes exactes', natYes: 'autorisé', natNo: 'non autorisé', natAllow: 'Autoriser', natTest: 'Tester dans 1 minute',
+    natCheck: 'Vérifier la programmation', natPending: 'Alarmes programmées dans Android', natLast: 'Dernière synchronisation',
+    natTestTitle: 'Alarme de test', natTestMsg: 'Alarme de test programmée : fermez l’écran et patientez 1 minute.', natDefault: 'Son du système',
+    natBatt: 'Si une alarme tarde ou manque : Paramètres Android → Applications → Horloge carillon → Batterie → « Sans restriction ».',
+    natLimit: 'Limites : écran éteint, un seul son est joué (le mode « autant de clics que l’heure » et les sons importés ne fonctionnent qu’application ouverte ; un son importé est remplacé par le son du système). Ouvrez l’application au moins tous les 2 jours.',
     prayBefore: 'Alarme avant chaque prière (minutes ; 0 = aucune)', prayBeforeSound: 'Son de l’alarme avant la prière', inMin: 'Dans',
     timerSound: 'Son du minuteur', hintChime: 'Le carillon retentit tant que la page reste ouverte et le son activé.',
     hintPrayer: 'Horaires obtenus en ligne (méthode du Maroc) ; modifiables à la main. L’horloge de l’appareil doit être à l’heure locale.',
@@ -42,6 +48,12 @@ const T = {
     builtin: 'الأصوات المدمجة', theme: 'المظهر', lang: 'اللغة', light: 'فاتح', dark: 'داكن', notif: 'السماح بالإشعارات', none: 'لا توجد عناصر.',
     once: 'مرة واحدة', daily: 'كل يوم', catSounds: 'صوت لكل فئة', defSound: 'الصوت الافتراضي للمنبهات', snoozeMin: 'مدة الغفوة (د)',
     evAlarm: 'منبه (رنين متكرر مع غفوة)', catSound: 'صوت الفئة',
+    nat: 'منبهات أندرويد (والشاشة مطفأة)', natHint: 'يتم برمجة الرنين والمنبهات والأجندة والمؤقت والصلاة داخل أندرويد، فتعمل حتى والتطبيق مغلق أو الشاشة مطفأة. الصوت يتبع مستوى صوت الإشعارات.',
+    natPerm: 'الإشعارات', natExact: 'المنبهات الدقيقة', natYes: 'مسموح', natNo: 'غير مسموح', natAllow: 'السماح', natTest: 'تجربة بعد دقيقة',
+    natCheck: 'التحقق من البرمجة', natPending: 'المنبهات المبرمجة في أندرويد', natLast: 'آخر مزامنة',
+    natTestTitle: 'منبه تجريبي', natTestMsg: 'تمت برمجة منبه تجريبي: أطفئ الشاشة وانتظر دقيقة.', natDefault: 'صوت النظام',
+    natBatt: 'إذا تأخر المنبه أو لم يرنّ: إعدادات أندرويد ← التطبيقات ← ساعة الرنين ← البطارية ← «دون قيود».',
+    natLimit: 'حدود: والشاشة مطفأة يُشغَّل صوت واحد فقط (نمط «نقرات بعدد الساعة» والأصوات المستوردة لا تعمل إلا والتطبيق مفتوح؛ ويُستبدل الصوت المستورد بصوت النظام). افتح التطبيق مرة كل يومين على الأقل.',
     prayBefore: 'منبه قبل كل صلاة (بالدقائق ؛ 0 = بدون)', prayBeforeSound: 'صوت المنبه قبل الصلاة', inMin: 'بعد',
     timerSound: 'صوت المؤقت', hintChime: 'يرنّ ما دامت الصفحة مفتوحة والصوت مفعّلاً.',
     hintPrayer: 'المواقيت مأخوذة عبر الإنترنت (طريقة المغرب) ويمكن تعديلها. يجب أن تكون ساعة الجهاز على التوقيت المحلي.',
@@ -76,7 +88,10 @@ let state = (() => {
   o.tab = 'clock';
   return o;
 })();
-const save = () => { try { const c = { ...state }; delete c.tab; localStorage.setItem(KEY, JSON.stringify(c)); } catch (e) { } };
+const save = () => {
+  try { const c = { ...state }; delete c.tab; localStorage.setItem(KEY, JSON.stringify(c)); } catch (e) { }
+  if (window.Native && Native.available) Native.changed();
+};
 function setPath(o, p, v) { const k = p.split('.'); while (k.length > 1) o = o[k.shift()]; o[k[0]] = v; }
 
 /* ---------- Sons importés (IndexedDB) ---------- */
@@ -201,6 +216,7 @@ function chimeNow(kind, h) {
   for (let i = 0; i < n; i++) setTimeout(() => playRef(c.sound, c.vol), i * sp);
 }
 function onMinute(n) {
+  if (window.Native && Native.active() && document.hidden) return;   // en arrière-plan, c'est Android qui sonne
   const h = n.getHours(), m = n.getMinutes(), hm = `${pad(h)}:${pad(m)}`, dow = n.getDay(), now = n.getTime();
   const c = state.chime;
   if (c.on) {
@@ -220,7 +236,8 @@ function onMinute(n) {
     if (e.fired) continue;
     const trig = new Date(`${e.date}T${e.time}`).getTime() - e.alert * 60000;
     if (isNaN(trig)) continue;
-    if (now >= trig && now < trig + 6 * 3600000) {
+    const win = (window.Native && Native.active()) ? 120000 : 6 * 3600000;   // Android a déjà sonné les plus anciens
+    if (now >= trig && now < trig + win) {
       e.fired = true; dirty = true;
       startRing({ title: `📅 ${e.title}`, sub: `${e.date} ${e.time} · ${t('c_' + e.cat)}${e.msg ? ' — ' + e.msg : ''}`, sound: (e.sound && e.sound !== 'cat') ? e.sound : (state.catSounds[e.cat] || 'b:click'), snooze: !!e.alarm });
     }
@@ -247,7 +264,7 @@ function tick() {
   const n = new Date();
   updateClock(n); updateTimer();
   const k = keyOf(n);
-  if (k !== lastKey) { lastKey = k; onMinute(n); }
+  if (k !== lastKey) { lastKey = k; onMinute(n); if (window.Native) Native.guard(); }
   const due = snoozes.filter(s => s.ts <= Date.now());
   if (due.length) { snoozes = snoozes.filter(s => s.ts > Date.now()); startRing(due[0].o); }
   const u = $('#unlock'); if (u) u.hidden = !!(AC && AC.state === 'running');
@@ -295,13 +312,34 @@ function updateTimer() {
 }
 
 /* ---------- Prière ---------- */
+// Horaires des prochains jours (utilisés par les alarmes Android, programmées à l'avance)
+async function fetchCalendar() {
+  const p = state.prayer, n = new Date();
+  const months = [[n.getFullYear(), n.getMonth() + 1]];
+  const nx = new Date(n.getFullYear(), n.getMonth() + 1, 1);
+  if (nx - n < 8 * 86400000) months.push([nx.getFullYear(), nx.getMonth() + 1]);
+  const cal = {};
+  for (const [y, m] of months) {
+    const r = await fetch(`https://api.aladhan.com/v1/calendarByCity/${y}/${m}?city=${encodeURIComponent(p.city)}&country=${encodeURIComponent(p.country)}&method=21`);
+    const j = await r.json();
+    for (const day of j.data) {
+      const [dd, mm, yy] = day.date.gregorian.date.split('-');
+      const o = {};
+      for (const k of PR) { const v = String(day.timings[k] || '').slice(0, 5); if (/^\d\d:\d\d$/.test(v)) o[k] = v; }
+      if (Object.keys(o).length === PR.length) cal[`${yy}-${mm}-${dd}`] = o;
+    }
+  }
+  if (Object.keys(cal).length) p.cal = cal;
+}
 async function fetchPrayer(silent) {
   const p = state.prayer;
   try {
     const r = await fetch(`https://api.aladhan.com/v1/timingsByCity?city=${encodeURIComponent(p.city)}&country=${encodeURIComponent(p.country)}&method=21`);
     const j = await r.json();
     for (const k of PR) p.times[k] = j.data.timings[k].slice(0, 5);
-    p.date = todayStr(); save();
+    p.date = todayStr();
+    try { await fetchCalendar(); } catch (e) { }
+    save();
     if (!silent) { alert(t('fetched')); }
     if (state.tab === 'prayer') render();
   } catch (e) { if (!silent) alert(t('fetchErr')); }
@@ -382,7 +420,15 @@ const views = {
     <section class="card"><h2>${t('mine')}</h2>${c}<label>${t('imp')}<input type="file" id="imp" accept="audio/*" multiple></label></section>`;
   },
   settings() {
-    return `<section class="card"><h2>${t('settings')}</h2>
+    const st = v => v === 'granted' ? `✓ ${t('natYes')}` : `✗ ${t('natNo')}`;
+    const nat = (window.Native && Native.available) ? `<section class="card"><h2>${t('nat')}</h2>
+    <p class="muted">${t('natHint')}</p>
+    <div class="item"><div class="grow">${t('natPerm')} : <b>${st(Native.perm)}</b></div><button data-act="natPerm">${t('natAllow')}</button></div>
+    <div class="item"><div class="grow">${t('natExact')} : <b>${st(Native.exact)}</b></div><button data-act="natExact">${t('natAllow')}</button></div>
+    <button data-act="natTest">${t('natTest')}</button><button class="ghost" data-act="natCheck">${t('natCheck')}</button>
+    ${Native.diagText ? `<div class="muted" style="white-space:pre-wrap;margin:8px 0">${esc(Native.diagText)}</div>` : ''}
+    <p class="muted">${t('natBatt')}</p><p class="muted">${t('natLimit')}</p></section>` : '';
+    return `${nat}<section class="card"><h2>${t('settings')}</h2>
     <label>${t('lang')}<select data-k="lang" data-re="1">${opt('fr', 'Français', state.lang)}${opt('ar', 'العربية', state.lang)}</select></label>
     <label>${t('theme')}<select data-k="theme" data-re="1">${opt('dark', t('dark'), state.theme)}${opt('light', t('light'), state.theme)}</select></label>
     <label>${t('snoozeMin')}<input type="number" min="1" max="60" data-k="snooze" value="${state.snooze}"></label>
@@ -408,7 +454,7 @@ function render() {
 
 /* ---------- Actions ---------- */
 const ACT = {
-  tab: (id, arg) => { state.tab = arg; render(); window.scrollTo(0, 0); },
+  tab: (id, arg) => { state.tab = arg; render(); window.scrollTo(0, 0); if (arg === 'settings' && window.Native && Native.available) Native.check(); },
   view: (id, arg) => { state.view = arg; save(); render(); },
   unlock: () => { ctx(); playRef('b:click', .3); },
   testChime: () => chimeNow('hour', new Date().getHours()),
@@ -434,9 +480,14 @@ const ACT = {
     const total = timer.left > 0 ? timer.left : ((Number($('#t_min').value) || 0) * 60 + (Number($('#t_sec').value) || 0)) * 1000;
     if (total <= 0) return;
     ctx(); timer.end = Date.now() + total; timer.running = true;
+    if (window.Native) Native.changed();
   },
-  tPause: () => { if (timer.running) { timer.left = timer.end - Date.now(); timer.running = false; timer.end = null; } },
-  tReset: () => { timer.running = false; timer.left = 0; timer.end = null; updateTimer(); },
+  tPause: () => { if (timer.running) { timer.left = timer.end - Date.now(); timer.running = false; timer.end = null; if (window.Native) Native.changed(); } },
+  tReset: () => { timer.running = false; timer.left = 0; timer.end = null; updateTimer(); if (window.Native) Native.changed(); },
+  natPerm: () => Native.requestPerm(),
+  natExact: () => Native.requestExact(),
+  natTest: () => Native.test(),
+  natCheck: () => Native.check(),
   fetchPrayer: () => fetchPrayer(false),
   notifPerm: () => { if ('Notification' in window) Notification.requestPermission(); },
   stopRing: () => stopRing(),
@@ -454,7 +505,7 @@ document.addEventListener('change', e => {
     if (el.dataset.re) render();
     return;
   }
-  if (el.dataset.tog) { const a = state.alarms.find(x => x.id === el.dataset.tog); if (a) { a.on = el.checked; save(); } return; }
+  if (el.dataset.tog) { const a = state.alarms.find(x => x.id === el.dataset.tog); if (a) { a.on = el.checked; a.armed = 0; save(); } return; }
   if (el.id === 'imp' && el.files.length) importFiles([...el.files]);
 });
 document.addEventListener('pointerdown', () => ctx(), { once: true });
@@ -465,6 +516,7 @@ document.addEventListener('keydown', () => ctx(), { once: true });
   try { customs = await dbAll(); } catch (e) { customs = []; }
   lastKey = keyOf(new Date());
   render();
+  if (window.Native && Native.available) Native.init();
   setInterval(tick, 250);
   if ('serviceWorker' in navigator && location.protocol.startsWith('http')) navigator.serviceWorker.register('sw.js').catch(() => { });
 })();
