@@ -17,10 +17,14 @@
 
   const DAY = 86400000;
   const GUARD = 150000;           // application ouverte : c'est elle qui sonne les 2,5 prochaines minutes
-  const MAX = 450;
+  const MAX = 300;
   const TEST_ID = 2147483000;
   const SOUNDS = ['click', 'tick', 'drop', 'beep', 'gong', 'bell'];
   const cancelled = new Set();
+  const msg = e => String((e && (e.message || e.errorMessage)) || e).slice(0, 120);
+  const fmt = ms => { const d = new Date(ms); return `${pad(d.getDate())}/${pad(d.getMonth() + 1)} ${pad(d.getHours())}:${pad(d.getMinutes())}`; };
+  // L'application ne sonne elle-même que si son moteur audio est réellement actif (sinon Android sonne).
+  const jsRings = () => !document.hidden && typeof AC !== 'undefined' && !!AC && AC.state === 'running';
 
   /* ---------- Identifiants et canaux ---------- */
   const hash = s => { let h = 0; for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) | 0; return Math.abs(h) % 512; };
@@ -132,36 +136,62 @@
     const sk = soundKey(x.sound);
     const n = {
       id: x.id, title: x.title, body: x.body || '', channelId: chan(x.kind, x.sound),
-      schedule: { at: new Date(x.at), allowWhileIdle: true }, autoCancel: true, extra: { group: x.group || null }
+      schedule: { at: new Date(x.at), allowWhileIdle: true }, autoCancel: true
     };
+    if (x.group) n.extra = { group: x.group };
     if (sk !== 'default') n.sound = 'snd_' + sk + '.wav';
     return n;
   }
 
   /* ---------- Synchronisation avec Android ---------- */
+  // Ordre voulu : programmer d'abord, annuler les obsolètes ensuite. Si l'application passe en
+  // arrière-plan au milieu de l'opération, il reste toujours des alarmes programmées.
+  async function scheduleChunk(chunk, info) {
+    try { await LN.schedule({ notifications: chunk.map(toNotif) }); info.scheduled += chunk.length; return; }
+    catch (e) { info.errors.push(msg(e)); }
+    for (const x of chunk) {            // un élément fautif ne doit pas bloquer les autres
+      try { await LN.schedule({ notifications: [toNotif(x)] }); info.scheduled++; } catch (e) { }
+    }
+  }
   let syncing = false, again = false, timerId = null;
   async function sync() {
     if (syncing) { again = true; return; }
     syncing = true;
+    const info = { time: Date.now(), planned: 0, scheduled: 0, errors: [] };
     try {
       const now = Date.now();
       const { list, mutated } = build(now);
       if (mutated) save();
-      const keep = document.hidden ? list : list.filter(x => x.at > now + GUARD);
-      const pend = await LN.getPending();
-      const ids = (pend.notifications || []).filter(n => n.id !== TEST_ID).map(n => ({ id: n.id }));
-      if (ids.length) await LN.cancel({ notifications: ids });
+      const keep = jsRings() ? list.filter(x => x.at > now + GUARD) : list;
+      const granted = N.perm === 'granted';
+      info.planned = granted ? keep.length : 0;
+      const keepIds = new Set(granted ? keep.map(x => x.id) : []);
+      if (granted) for (let i = 0; i < keep.length; i += 40) await scheduleChunk(keep.slice(i, i + 40), info);
+      try {
+        const pend = await LN.getPending();
+        const stale = (pend.notifications || []).filter(n => n.id !== TEST_ID && !keepIds.has(n.id)).map(n => ({ id: n.id }));
+        for (let i = 0; i < stale.length; i += 100) await LN.cancel({ notifications: stale.slice(i, i + 100) });
+      } catch (e) { info.errors.push(msg(e)); }
       cancelled.clear();
-      if (N.perm === 'granted' && keep.length) await LN.schedule({ notifications: keep.map(toNotif) });
-    } catch (e) { console.warn('Native.sync', e); }
-    finally { syncing = false; if (again) { again = false; sync(); } }
+    } catch (e) { info.errors.push(msg(e)); }
+    finally { N.lastSync = info; syncing = false; if (again) { again = false; sync(); } }
   }
   N.sync = sync;
   N.changed = () => { clearTimeout(timerId); timerId = setTimeout(sync, 700); };
 
+  // L'application passe en arrière-plan : un seul appel, sans attente, pour reprogrammer les
+  // alarmes proches que l'application sonnait elle-même (le moteur web peut être suspendu aussitôt).
+  function scheduleNear() {
+    if (!N.active()) return;
+    const now = Date.now();
+    const near = build(now).list.filter(x => x.at <= now + GUARD + 120000);
+    if (near.length) { try { LN.schedule({ notifications: near.map(toNotif) }).catch(() => { }); } catch (e) { } }
+  }
+  N._scheduleNear = scheduleNear;
+
   // Application ouverte : annule dans Android ce que l'application sonne elle-même.
   N.guard = async () => {
-    if (!N.active() || document.hidden) return;
+    if (!N.active() || !jsRings()) return;
     try {
       const now = Date.now();
       const ids = build(now).list.filter(x => x.at <= now + GUARD && !cancelled.has(x.id)).map(x => x.id);
@@ -195,6 +225,21 @@
     } catch (e) { alert(String(e)); }
   };
 
+  N.check = async () => {
+    await refresh();
+    const L = [];
+    try {
+      const pend = (await LN.getPending()).notifications || [];
+      L.push(`${t('natPending')} : ${pend.length}`);
+      pend.filter(n => n.schedule && n.schedule.at).map(n => ({ at: new Date(n.schedule.at).getTime(), title: n.title }))
+        .filter(r => !isNaN(r.at)).sort((a, b) => a.at - b.at).slice(0, 6).forEach(r => L.push(`${fmt(r.at)}  ${r.title}`));
+    } catch (e) { L.push('⚠ ' + msg(e)); }
+    const q = N.lastSync;
+    if (q) L.push(`${t('natLast')} ${fmt(q.time)} · ${q.scheduled}/${q.planned}${q.errors.length ? ' · ⚠ ' + q.errors[0] : ''}`);
+    N.diagText = L.join('\n');
+    if (typeof render === 'function' && state.tab === 'settings') render();
+  };
+
   N.init = async () => {
     await refresh();
     await createChannels();
@@ -211,7 +256,9 @@
       });
     } catch (e) { }
     document.addEventListener('visibilitychange', async () => {
-      if (!document.hidden) { await refresh(); try { await LN.removeAllDeliveredNotifications(); } catch (e) { } }
+      if (document.hidden) { scheduleNear(); return; }
+      await refresh();
+      try { await LN.removeAllDeliveredNotifications(); } catch (e) { }
       sync();
     });
     setInterval(() => { if (!document.hidden) sync(); }, 6 * 3600000);
